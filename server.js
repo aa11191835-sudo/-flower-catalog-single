@@ -23,13 +23,13 @@ const API_KEY = process.env.BIZFORM_API_KEY;
 // 「花藝樣式選擇」表單的 form.id
 const FORM_ID = 14;
 
-// 欄位對照（用的是每個欄位真正的 name 屬性，不是畫面上的 field_N 編號）
-const FIELD_MAP = {
-  custPhone: 'e9b6394ee940458981c1f9bda01a119c', // 客戶電話
-  custName: '5181889417154d129d3beb0d43f4c427',  // 客戶姓名
-  flower1: 'b2288430ec0d4e998c4a6de740faf65f',    // 花藝類別1
-  flower2: 'fcf64008f57b440b8e4797f8f3ce38e8',    // 花藝類別2
-  flower3: '62f57b03a7a24c0982cfdb7b03c660ba',    // 花藝類別3
+// 各欄位真正的 id（field_N）
+const FIELD_IDS = {
+  custPhone: 'field_1',
+  custName: 'field_2',
+  flower1: 'field_17',
+  flower2: 'field_20',
+  flower3: 'field_18',
 };
 
 app.post('/api/submit', async (req, res) => {
@@ -38,27 +38,47 @@ app.post('/api/submit', async (req, res) => {
     if (!name || !phone || !flower1 || !flower2 || !flower3) {
       return res.status(400).json({ error: '請填寫完整資料並選滿3款' });
     }
-    if (!FORM_ID || !FIELD_MAP.custName) {
-      return res.status(500).json({ error: '尚未設定 FORM_ID / FIELD_MAP，請聯絡開發人員完成設定' });
-    }
 
-    // 用 x-www-form-urlencoded 建立新文件（依 BizForm 文件的 createByFormId 慣例）
-    const params = new URLSearchParams();
-    params.append(FIELD_MAP.custName, name);
-    params.append(FIELD_MAP.custPhone, phone);
-    params.append(FIELD_MAP.flower1, flower1);
-    params.append(FIELD_MAP.flower2, flower2);
-    params.append(FIELD_MAP.flower3, flower3);
+    const now = new Date().toISOString();
 
-    const url = `${BIZFORM_BASE}/Documents?formId=${FORM_ID}`;
+    // 完整文件結構，仿照系統實際建立成功的文件格式（包含所有必填的中繼資料欄位）
+    const body = {
+      id: 0,
+      form: { id: FORM_ID },
+      title: phone,
+      summary: name,
+      attributes: [
+        { id: FIELD_IDS.custPhone, value: [phone] },
+        { id: FIELD_IDS.custName, value: [name] },
+        { id: FIELD_IDS.flower1, value: [flower1] },
+        { id: FIELD_IDS.flower2, value: [flower2] },
+        { id: FIELD_IDS.flower3, value: [flower3] },
+      ],
+      attachments: [],
+      categories: [],
+      tags: [],
+      creationDateTime: now,
+      versionCreationDateTime: now,
+      permissions: [],
+      notificationSetting: { onDocumentCreated: [], onWorkflowCompleted: [] },
+      owner: null,
+      versionCreator: null,
+      versionNumber: 1,
+      subDocuments: [],
+      state: 0,
+      executedDateTime: now,
+      lastAuditor: null,
+    };
+
+    const url = `${BIZFORM_BASE}/Documents`;
     const bizRes = await fetch(url, {
       method: 'POST',
       headers: {
         'x-api-key': API_KEY,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         accept: 'application/json',
       },
-      body: params.toString(),
+      body: JSON.stringify(body),
     });
 
     if (!bizRes.ok) {
