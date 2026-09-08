@@ -1,0 +1,9 @@
+{
+  "name": "style-selection-cart",
+  "version": "1.0.0",
+  "description": "花藝/壽衣款式選擇（購物車模式，直接寫入BizForm）",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.19.2" }
+}
